@@ -1,0 +1,5316 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Calendar Planner Web</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: "Segoe UI", "Microsoft JhengHei", sans-serif;
+        --accent: #f97316;
+        --accent-strong: #ea580c;
+        --accent-soft: #ffedd5;
+        --ink: #1f2937;
+        --muted: #64748b;
+        --line: rgba(249, 115, 22, 0.18);
+        --shadow: 0 18px 40px rgba(249, 115, 22, 0.12);
+        --card: rgba(255, 255, 255, 0.94);
+        --bg: linear-gradient(180deg, #fffaf4 0%, #f6efe6 100%);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+      }
+
+      body {
+        background: var(--bg);
+        color: var(--ink);
+      }
+
+      button,
+      input {
+        font: inherit;
+      }
+
+      .shell {
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 20px 16px 40px;
+      }
+
+      .hero {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 14px;
+        margin-bottom: 16px;
+      }
+
+      .hero h1 {
+        margin: 0;
+        font-size: clamp(1.65rem, 3vw, 2.2rem);
+      }
+
+      .hero p {
+        margin: 8px 0 0;
+        color: var(--muted);
+        line-height: 1.5;
+      }
+
+      .toolbar,
+      .tabbar,
+      .calendar-toolbar,
+      .filters,
+      .summary-inline {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .tabbar {
+        margin: 18px 0 16px;
+      }
+
+      .card {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        box-shadow: var(--shadow);
+      }
+
+      .section {
+        padding: 18px;
+      }
+
+      .section h2 {
+        margin: 0;
+        font-size: 1.15rem;
+      }
+
+      .stack {
+        display: grid;
+        gap: 14px;
+      }
+
+      .row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .ghost,
+      .tab,
+      .chip,
+      .primary {
+        border-radius: 999px;
+        padding: 10px 16px;
+        cursor: pointer;
+      }
+
+      .ghost,
+      .tab,
+      .chip {
+        border: 1px solid var(--line);
+        background: #fff8f0;
+        color: var(--accent);
+      }
+
+      .primary {
+        border: 0;
+        background: linear-gradient(135deg, var(--accent) 0%, #fb923c 100%);
+        color: #fff7ed;
+      }
+
+      .tab.active,
+      .chip.active {
+        background: linear-gradient(135deg, var(--accent) 0%, #fb923c 100%);
+        color: #fff7ed;
+        border-color: transparent;
+      }
+
+      .ghost:hover,
+      .tab:hover,
+      .chip:hover,
+      .primary:hover {
+        filter: brightness(0.98);
+      }
+
+      .hidden {
+        display: none !important;
+      }
+
+      .status-card {
+        padding: 14px 16px;
+      }
+
+      .status {
+        color: var(--muted);
+        font-size: 0.95rem;
+        line-height: 1.5;
+      }
+
+      .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 14px;
+        margin-top: 16px;
+      }
+
+      .summary-box {
+        padding: 16px;
+        border-radius: 20px;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.84);
+      }
+
+      .eyebrow {
+        margin: 0 0 6px;
+        color: var(--accent);
+        font-size: 0.88rem;
+      }
+
+      .value {
+        margin: 0;
+        font-size: 1.9rem;
+        font-weight: 800;
+        color: #0f172a;
+      }
+
+      .event-card,
+      .todo-card {
+        padding: 14px 16px;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.9);
+      }
+
+      .event-card .title,
+      .todo-card .title {
+        margin: 0;
+        font-size: 1.1rem;
+        font-weight: 700;
+      }
+
+      .meta {
+        margin: 8px 0 0;
+        color: var(--muted);
+        line-height: 1.55;
+      }
+
+      .badge {
+        border-radius: 999px;
+        padding: 6px 12px;
+        font-size: 0.88rem;
+        border: 1px solid rgba(249, 115, 22, 0.16);
+        background: var(--accent-soft);
+        color: #7c2d12;
+      }
+
+      .week-groups {
+        display: grid;
+        gap: 18px;
+        margin-top: 14px;
+      }
+
+      .week-group h3 {
+        margin: 0 0 10px;
+      }
+
+      .month-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-bottom: 14px;
+      }
+
+      .month-header h2 {
+        margin: 0;
+      }
+
+      .calendar-grid {
+        display: grid;
+        grid-template-columns: repeat(7, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .weekday {
+        text-align: center;
+        color: var(--muted);
+        font-size: 0.92rem;
+      }
+
+      .day-card {
+        min-height: 120px;
+        padding: 10px;
+        border-radius: 18px;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.92);
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .day-card.today {
+        background: linear-gradient(180deg, #fff7ed 0%, #ffffff 100%);
+        box-shadow: inset 0 0 0 1px rgba(249, 115, 22, 0.18);
+      }
+
+      .day-card.past {
+        opacity: 0.74;
+      }
+
+      .day-card.weekend .day-number {
+        color: #dc2626;
+      }
+
+      .day-number {
+        font-weight: 700;
+      }
+
+      .mini-event {
+        border-radius: 999px;
+        padding: 4px 8px;
+        font-size: 0.78rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .search-box {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin: 14px 0;
+        align-items: center;
+      }
+
+      .field {
+        min-width: 0;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 10px 14px;
+        background: #fffdf9;
+      }
+
+      .search-box .field {
+        flex: 1 1 280px;
+      }
+
+      .filters {
+        margin-bottom: 14px;
+      }
+
+      .empty {
+        padding: 18px 6px;
+        color: var(--muted);
+      }
+
+      .footer-note {
+        margin-top: 18px;
+        color: var(--muted);
+        font-size: 0.9rem;
+        line-height: 1.5;
+      }
+
+      @media (max-width: 760px) {
+        .shell {
+          padding-inline: 12px;
+        }
+
+        .calendar-grid {
+          gap: 8px;
+        }
+
+        .day-card {
+          min-height: 96px;
+          padding: 8px;
+        }
+
+        .summary-grid {
+          grid-template-columns: 1fr 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <script id="embeddedReadonlySnapshot" type="application/json">{
+  "format": "calendar-planner-readonly-web",
+  "exportedAt": "2026-05-26T02:53:40.071Z",
+  "appVersion": "0.1.37",
+  "currentDate": "2026-05-26",
+  "range": {
+    "from": "2025-05-21",
+    "to": "2028-06-04"
+  },
+  "categories": [
+    {
+      "name": "工作",
+      "color": "#f97316"
+    },
+    {
+      "name": "個人",
+      "color": "#3b82f6"
+    }
+  ],
+  "events": [
+    {
+      "id": "process-401-step-1778827334269-2026-05-08",
+      "title": "獎金請款",
+      "date": "2026-05-08",
+      "startTime": "09:00",
+      "endTime": "09:30",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "獎金請款",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "1778639992680",
+      "title": "新訓",
+      "date": "2026-05-14",
+      "startTime": "08:50",
+      "endTime": "09:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "5F 訓練教室",
+      "summary": "",
+      "notes": "",
+      "origin": "",
+      "generated": false
+    },
+    {
+      "id": "1778640126649",
+      "title": "員旅一日遊",
+      "date": "2026-05-17",
+      "startTime": "",
+      "endTime": "",
+      "allDay": true,
+      "category": "個人",
+      "categoryColor": "#3b82f6",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "",
+      "generated": false
+    },
+    {
+      "id": "1779085965912",
+      "title": "獎金匯入ORCL",
+      "date": "2026-05-18",
+      "startTime": "09:00",
+      "endTime": "16:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "獎金發放流程 · 獎金匯入ORCL",
+      "origin": "固定流程例外",
+      "generated": false
+    },
+    {
+      "id": "1778639996884",
+      "title": "新訓",
+      "date": "2026-05-19",
+      "startTime": "08:50",
+      "endTime": "09:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "108會議室",
+      "summary": "",
+      "notes": "",
+      "origin": "",
+      "generated": false
+    },
+    {
+      "id": "1778805700043",
+      "title": "確認代理獎金是否全匯入",
+      "date": "2026-05-19",
+      "startTime": "11:00",
+      "endTime": "11:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "",
+      "generated": false
+    },
+    {
+      "id": "recurring-1779180239432-2026-05-19",
+      "title": "特別加給匯入ORCL",
+      "date": "2026-05-19",
+      "startTime": "11:00",
+      "endTime": "11:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程",
+      "generated": true
+    },
+    {
+      "id": "1778751132528",
+      "title": "銀行匯款",
+      "date": "2026-05-19",
+      "startTime": "13:35",
+      "endTime": "15:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "銀行匯款",
+      "origin": "固定流程例外",
+      "generated": false
+    },
+    {
+      "id": "1778836405694",
+      "title": "發獎金",
+      "date": "2026-05-20",
+      "startTime": "00:00",
+      "endTime": "00:05",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "每月獎金發放",
+      "origin": "固定流程例外",
+      "generated": false
+    },
+    {
+      "id": "1778640236247",
+      "title": "久任表揚大會",
+      "date": "2026-05-20",
+      "startTime": "08:30",
+      "endTime": "12:30",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "B15 9F",
+      "summary": "",
+      "notes": "",
+      "origin": "",
+      "generated": false
+    },
+    {
+      "id": "1779086264388",
+      "title": "C team訂餐",
+      "date": "2026-05-20",
+      "startTime": "15:00",
+      "endTime": "16:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "",
+      "generated": false
+    },
+    {
+      "id": "1778824437776",
+      "title": "C team",
+      "date": "2026-05-21",
+      "startTime": "11:00",
+      "endTime": "12:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "800",
+      "summary": "",
+      "notes": "取餐",
+      "origin": "",
+      "generated": false
+    },
+    {
+      "id": "1778640050371",
+      "title": "中午請假",
+      "date": "2026-05-21",
+      "startTime": "11:30",
+      "endTime": "14:45",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "",
+      "generated": false
+    },
+    {
+      "id": "1779265047619",
+      "title": "回存明細送簽",
+      "date": "2026-05-22",
+      "startTime": "10:00",
+      "endTime": "10:05",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "",
+      "generated": false
+    },
+    {
+      "id": "1779435548860",
+      "title": "達標簽呈",
+      "date": "2026-05-25",
+      "startTime": "09:00",
+      "endTime": "09:30",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "",
+      "generated": false
+    },
+    {
+      "id": "1779265140498",
+      "title": "華邦認證津貼請款",
+      "date": "2026-05-25",
+      "startTime": "09:30",
+      "endTime": "10:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "華邦認證津貼 · 華邦認證津貼請款",
+      "origin": "",
+      "generated": false
+    },
+    {
+      "id": "1778662496628",
+      "title": "ADM月會",
+      "date": "2026-05-25",
+      "startTime": "10:30",
+      "endTime": "12:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "5F訓練教室",
+      "summary": "",
+      "notes": "",
+      "origin": "",
+      "generated": false
+    },
+    {
+      "id": "1779700138154",
+      "title": "各項達標獎金發放",
+      "date": "2026-05-26",
+      "startTime": "11:00",
+      "endTime": "12:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "",
+      "generated": false
+    },
+    {
+      "id": "1779673325313",
+      "title": "ORCL跑補充保費",
+      "date": "2026-05-27",
+      "startTime": "11:00",
+      "endTime": "11:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程例外",
+      "generated": false
+    },
+    {
+      "id": "recurring-1778724912003-2026-06-01",
+      "title": "eFlow跑代理獎金",
+      "date": "2026-06-01",
+      "startTime": "11:00",
+      "endTime": "11:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程",
+      "generated": true
+    },
+    {
+      "id": "1779673120325",
+      "title": "新訓",
+      "date": "2026-06-02",
+      "startTime": "08:50",
+      "endTime": "09:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "108會議室",
+      "summary": "",
+      "notes": "",
+      "origin": "",
+      "generated": false
+    },
+    {
+      "id": "1779438878192",
+      "title": "新增6/1底薪生效的晉升人員",
+      "date": "2026-06-02",
+      "startTime": "09:00",
+      "endTime": "09:05",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "30816陳心怡",
+      "origin": "",
+      "generated": false
+    },
+    {
+      "id": "1779154282950",
+      "title": "生產獎金會議",
+      "date": "2026-06-02",
+      "startTime": "10:00",
+      "endTime": "10:45",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "",
+      "generated": false
+    },
+    {
+      "id": "1779154319646",
+      "title": "要KVD",
+      "date": "2026-06-02",
+      "startTime": "10:45",
+      "endTime": "11:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程例外",
+      "generated": false
+    },
+    {
+      "id": "1779441673497",
+      "title": "讀書會",
+      "date": "2026-06-02",
+      "startTime": "12:30",
+      "endTime": "13:30",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "",
+      "generated": false
+    },
+    {
+      "id": "process-1778569277085-step-1-2026-06-04",
+      "title": "銀行匯款",
+      "date": "2026-06-04",
+      "startTime": "14:00",
+      "endTime": "15:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "華邦認證津貼 · 銀行匯款",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "1778809456145",
+      "title": "華邦認證津貼發放",
+      "date": "2026-06-05",
+      "startTime": "00:00",
+      "endTime": "00:02",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "華邦認證津貼 · 華邦認證津貼發放",
+      "origin": "固定流程例外",
+      "generated": false
+    },
+    {
+      "id": "process-401-step-1778827334269-2026-06-09",
+      "title": "獎金請款",
+      "date": "2026-06-09",
+      "startTime": "09:00",
+      "endTime": "09:30",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "獎金請款",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "1779673177042",
+      "title": "新訓",
+      "date": "2026-06-11",
+      "startTime": "08:50",
+      "endTime": "09:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "108會議室",
+      "summary": "",
+      "notes": "",
+      "origin": "",
+      "generated": false
+    },
+    {
+      "id": "process-1778634409321-step-1778634307579-2026-06-11",
+      "title": "要Downtime",
+      "date": "2026-06-11",
+      "startTime": "09:15",
+      "endTime": "09:30",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "要ABC team達標資料 · 要Downtime",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "1779441663693",
+      "title": "讀書會",
+      "date": "2026-06-11",
+      "startTime": "12:30",
+      "endTime": "13:30",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "",
+      "generated": false
+    },
+    {
+      "id": "process-1778634409321-step-1-2026-06-15",
+      "title": "ABC team達標資料(LM)",
+      "date": "2026-06-15",
+      "startTime": "09:00",
+      "endTime": "09:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "要ABC team達標資料 · ABC team達標資料(LM)",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "recurring-1778723189386-2026-06-15",
+      "title": "確認代理獎金是否全匯入",
+      "date": "2026-06-15",
+      "startTime": "11:00",
+      "endTime": "11:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程",
+      "generated": true
+    },
+    {
+      "id": "process-401-request-2026-06-17",
+      "title": "獎金匯入ORCL",
+      "date": "2026-06-17",
+      "startTime": "09:00",
+      "endTime": "16:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "獎金發放流程 · 獎金匯入ORCL",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-1778634409321-main-2026-06-18",
+      "title": "要ABC team達標資料(Leen)",
+      "date": "2026-06-18",
+      "startTime": "10:00",
+      "endTime": "11:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "要ABC team達標資料 · 要ABC team達標資料(Leen)",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-401-bank-2026-06-18",
+      "title": "銀行匯款",
+      "date": "2026-06-18",
+      "startTime": "14:00",
+      "endTime": "15:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "銀行匯款",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-401-main-2026-06-19",
+      "title": "發獎金",
+      "date": "2026-06-19",
+      "startTime": "00:00",
+      "endTime": "00:01",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "每月獎金發放",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "recurring-1779180239432-2026-06-19",
+      "title": "特別加給匯入ORCL",
+      "date": "2026-06-19",
+      "startTime": "11:00",
+      "endTime": "11:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程",
+      "generated": true
+    },
+    {
+      "id": "1779265160735",
+      "title": "華邦認證津貼請款",
+      "date": "2026-06-23",
+      "startTime": "09:30",
+      "endTime": "10:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "華邦認證津貼 · 華邦認證津貼請款",
+      "origin": "固定流程例外",
+      "generated": false
+    },
+    {
+      "id": "1778660667574",
+      "title": "體適能科技檢測活動",
+      "date": "2026-06-24",
+      "startTime": "15:30",
+      "endTime": "16:30",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "聯合辦公大樓5樓 國際會議廳(保健所樓上)",
+      "summary": "",
+      "notes": "攜帶健保卡",
+      "origin": "",
+      "generated": false
+    },
+    {
+      "id": "recurring-1778724845911-2026-06-29",
+      "title": "ORCL跑補充保費",
+      "date": "2026-06-29",
+      "startTime": "11:00",
+      "endTime": "11:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程",
+      "generated": true
+    },
+    {
+      "id": "recurring-1778724912003-2026-06-30",
+      "title": "eFlow跑代理獎金",
+      "date": "2026-06-30",
+      "startTime": "11:00",
+      "endTime": "11:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程",
+      "generated": true
+    },
+    {
+      "id": "1779438888299",
+      "title": "新增7/1底薪生效的晉升人員",
+      "date": "2026-07-02",
+      "startTime": "09:00",
+      "endTime": "09:05",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "30833蔡濬任\n30850林米婕里",
+      "origin": "",
+      "generated": false
+    },
+    {
+      "id": "recurring-1778634459491-2026-07-02",
+      "title": "要KVD",
+      "date": "2026-07-02",
+      "startTime": "10:00",
+      "endTime": "11:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程",
+      "generated": true
+    },
+    {
+      "id": "process-1778569277085-step-1-2026-07-02",
+      "title": "銀行匯款",
+      "date": "2026-07-02",
+      "startTime": "14:00",
+      "endTime": "15:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "華邦認證津貼 · 銀行匯款",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-1778569277085-main-2026-07-03",
+      "title": "華邦認證津貼發放",
+      "date": "2026-07-03",
+      "startTime": "00:00",
+      "endTime": "00:01",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "華邦認證津貼 · 華邦認證津貼發放",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-401-step-1778827334269-2026-07-08",
+      "title": "獎金請款",
+      "date": "2026-07-08",
+      "startTime": "09:00",
+      "endTime": "09:30",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "獎金請款",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-1778634409321-step-1778634307579-2026-07-10",
+      "title": "要Downtime",
+      "date": "2026-07-10",
+      "startTime": "09:15",
+      "endTime": "09:30",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "要ABC team達標資料 · 要Downtime",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-1778634409321-step-1-2026-07-14",
+      "title": "ABC team達標資料(LM)",
+      "date": "2026-07-14",
+      "startTime": "09:00",
+      "endTime": "09:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "要ABC team達標資料 · ABC team達標資料(LM)",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "recurring-1778723189386-2026-07-15",
+      "title": "確認代理獎金是否全匯入",
+      "date": "2026-07-15",
+      "startTime": "11:00",
+      "endTime": "11:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程",
+      "generated": true
+    },
+    {
+      "id": "process-401-request-2026-07-16",
+      "title": "獎金匯入ORCL",
+      "date": "2026-07-16",
+      "startTime": "09:00",
+      "endTime": "16:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "獎金發放流程 · 獎金匯入ORCL",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-1778634409321-main-2026-07-17",
+      "title": "要ABC team達標資料(Leen)",
+      "date": "2026-07-17",
+      "startTime": "10:00",
+      "endTime": "11:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "要ABC team達標資料 · 要ABC team達標資料(Leen)",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "recurring-1779180239432-2026-07-17",
+      "title": "特別加給匯入ORCL",
+      "date": "2026-07-17",
+      "startTime": "11:00",
+      "endTime": "11:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程",
+      "generated": true
+    },
+    {
+      "id": "process-401-bank-2026-07-17",
+      "title": "銀行匯款",
+      "date": "2026-07-17",
+      "startTime": "14:00",
+      "endTime": "15:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "銀行匯款",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-401-main-2026-07-20",
+      "title": "發獎金",
+      "date": "2026-07-20",
+      "startTime": "00:00",
+      "endTime": "00:01",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "每月獎金發放",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-1778569277085-step-1778569243104-2026-07-24",
+      "title": "華邦認證津貼請款",
+      "date": "2026-07-24",
+      "startTime": "09:00",
+      "endTime": "10:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "華邦認證津貼 · 華邦認證津貼請款",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "recurring-1778724845911-2026-07-29",
+      "title": "ORCL跑補充保費",
+      "date": "2026-07-29",
+      "startTime": "11:00",
+      "endTime": "11:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程",
+      "generated": true
+    },
+    {
+      "id": "recurring-1778724912003-2026-07-31",
+      "title": "eFlow跑代理獎金",
+      "date": "2026-07-31",
+      "startTime": "11:00",
+      "endTime": "11:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程",
+      "generated": true
+    },
+    {
+      "id": "recurring-1778634459491-2026-08-03",
+      "title": "要KVD",
+      "date": "2026-08-03",
+      "startTime": "10:00",
+      "endTime": "11:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程",
+      "generated": true
+    },
+    {
+      "id": "process-1778569277085-step-1-2026-08-04",
+      "title": "銀行匯款",
+      "date": "2026-08-04",
+      "startTime": "14:00",
+      "endTime": "15:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "華邦認證津貼 · 銀行匯款",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-1778569277085-main-2026-08-05",
+      "title": "華邦認證津貼發放",
+      "date": "2026-08-05",
+      "startTime": "00:00",
+      "endTime": "00:01",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "華邦認證津貼 · 華邦認證津貼發放",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-401-step-1778827334269-2026-08-10",
+      "title": "獎金請款",
+      "date": "2026-08-10",
+      "startTime": "09:00",
+      "endTime": "09:30",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "獎金請款",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-1778634409321-step-1778634307579-2026-08-11",
+      "title": "要Downtime",
+      "date": "2026-08-11",
+      "startTime": "09:15",
+      "endTime": "09:30",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "要ABC team達標資料 · 要Downtime",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-1778634409321-step-1-2026-08-13",
+      "title": "ABC team達標資料(LM)",
+      "date": "2026-08-13",
+      "startTime": "09:00",
+      "endTime": "09:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "要ABC team達標資料 · ABC team達標資料(LM)",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "recurring-1778723189386-2026-08-14",
+      "title": "確認代理獎金是否全匯入",
+      "date": "2026-08-14",
+      "startTime": "11:00",
+      "endTime": "11:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程",
+      "generated": true
+    },
+    {
+      "id": "process-401-request-2026-08-18",
+      "title": "獎金匯入ORCL",
+      "date": "2026-08-18",
+      "startTime": "09:00",
+      "endTime": "16:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "獎金發放流程 · 獎金匯入ORCL",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-1778634409321-main-2026-08-18",
+      "title": "要ABC team達標資料(Leen)",
+      "date": "2026-08-18",
+      "startTime": "10:00",
+      "endTime": "11:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "要ABC team達標資料 · 要ABC team達標資料(Leen)",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "recurring-1779180239432-2026-08-19",
+      "title": "特別加給匯入ORCL",
+      "date": "2026-08-19",
+      "startTime": "11:00",
+      "endTime": "11:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程",
+      "generated": true
+    },
+    {
+      "id": "process-401-bank-2026-08-19",
+      "title": "銀行匯款",
+      "date": "2026-08-19",
+      "startTime": "14:00",
+      "endTime": "15:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "銀行匯款",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-401-main-2026-08-20",
+      "title": "發獎金",
+      "date": "2026-08-20",
+      "startTime": "00:00",
+      "endTime": "00:01",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "每月獎金發放",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-1778569277085-step-1778569243104-2026-08-25",
+      "title": "華邦認證津貼請款",
+      "date": "2026-08-25",
+      "startTime": "09:00",
+      "endTime": "10:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "華邦認證津貼 · 華邦認證津貼請款",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "recurring-1778724845911-2026-08-28",
+      "title": "ORCL跑補充保費",
+      "date": "2026-08-28",
+      "startTime": "11:00",
+      "endTime": "11:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程",
+      "generated": true
+    },
+    {
+      "id": "recurring-1778724912003-2026-08-31",
+      "title": "eFlow跑代理獎金",
+      "date": "2026-08-31",
+      "startTime": "11:00",
+      "endTime": "11:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程",
+      "generated": true
+    },
+    {
+      "id": "recurring-1778634459491-2026-09-02",
+      "title": "要KVD",
+      "date": "2026-09-02",
+      "startTime": "10:00",
+      "endTime": "11:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程",
+      "generated": true
+    },
+    {
+      "id": "process-1778569277085-step-1-2026-09-03",
+      "title": "銀行匯款",
+      "date": "2026-09-03",
+      "startTime": "14:00",
+      "endTime": "15:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "華邦認證津貼 · 銀行匯款",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-1778569277085-main-2026-09-04",
+      "title": "華邦認證津貼發放",
+      "date": "2026-09-04",
+      "startTime": "00:00",
+      "endTime": "00:01",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "華邦認證津貼 · 華邦認證津貼發放",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-401-step-1778827334269-2026-09-08",
+      "title": "獎金請款",
+      "date": "2026-09-08",
+      "startTime": "09:00",
+      "endTime": "09:30",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "獎金請款",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-1778634409321-step-1778634307579-2026-09-11",
+      "title": "要Downtime",
+      "date": "2026-09-11",
+      "startTime": "09:15",
+      "endTime": "09:30",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "要ABC team達標資料 · 要Downtime",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-1778634409321-step-1-2026-09-15",
+      "title": "ABC team達標資料(LM)",
+      "date": "2026-09-15",
+      "startTime": "09:00",
+      "endTime": "09:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "要ABC team達標資料 · ABC team達標資料(LM)",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "recurring-1778723189386-2026-09-15",
+      "title": "確認代理獎金是否全匯入",
+      "date": "2026-09-15",
+      "startTime": "11:00",
+      "endTime": "11:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程",
+      "generated": true
+    },
+    {
+      "id": "process-401-request-2026-09-16",
+      "title": "獎金匯入ORCL",
+      "date": "2026-09-16",
+      "startTime": "09:00",
+      "endTime": "16:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "獎金發放流程 · 獎金匯入ORCL",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-401-bank-2026-09-17",
+      "title": "銀行匯款",
+      "date": "2026-09-17",
+      "startTime": "14:00",
+      "endTime": "15:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "銀行匯款",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-401-main-2026-09-18",
+      "title": "發獎金",
+      "date": "2026-09-18",
+      "startTime": "00:00",
+      "endTime": "00:01",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "每月獎金發放",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-1778634409321-main-2026-09-18",
+      "title": "要ABC team達標資料(Leen)",
+      "date": "2026-09-18",
+      "startTime": "10:00",
+      "endTime": "11:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "要ABC team達標資料 · 要ABC team達標資料(Leen)",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "recurring-1779180239432-2026-09-18",
+      "title": "特別加給匯入ORCL",
+      "date": "2026-09-18",
+      "startTime": "11:00",
+      "endTime": "11:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程",
+      "generated": true
+    },
+    {
+      "id": "process-1778569277085-step-1778569243104-2026-09-23",
+      "title": "華邦認證津貼請款",
+      "date": "2026-09-23",
+      "startTime": "09:00",
+      "endTime": "10:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "華邦認證津貼 · 華邦認證津貼請款",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "recurring-1778724845911-2026-09-29",
+      "title": "ORCL跑補充保費",
+      "date": "2026-09-29",
+      "startTime": "11:00",
+      "endTime": "11:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程",
+      "generated": true
+    },
+    {
+      "id": "recurring-1778724912003-2026-09-30",
+      "title": "eFlow跑代理獎金",
+      "date": "2026-09-30",
+      "startTime": "11:00",
+      "endTime": "11:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程",
+      "generated": true
+    },
+    {
+      "id": "recurring-1778634459491-2026-10-02",
+      "title": "要KVD",
+      "date": "2026-10-02",
+      "startTime": "10:00",
+      "endTime": "11:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程",
+      "generated": true
+    },
+    {
+      "id": "process-1778569277085-step-1-2026-10-02",
+      "title": "銀行匯款",
+      "date": "2026-10-02",
+      "startTime": "14:00",
+      "endTime": "15:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "華邦認證津貼 · 銀行匯款",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-1778569277085-main-2026-10-05",
+      "title": "華邦認證津貼發放",
+      "date": "2026-10-05",
+      "startTime": "00:00",
+      "endTime": "00:01",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "華邦認證津貼 · 華邦認證津貼發放",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-401-step-1778827334269-2026-10-08",
+      "title": "獎金請款",
+      "date": "2026-10-08",
+      "startTime": "09:00",
+      "endTime": "09:30",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "獎金請款",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-1778634409321-step-1778634307579-2026-10-09",
+      "title": "要Downtime",
+      "date": "2026-10-09",
+      "startTime": "09:15",
+      "endTime": "09:30",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "要ABC team達標資料 · 要Downtime",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-1778634409321-step-1-2026-10-13",
+      "title": "ABC team達標資料(LM)",
+      "date": "2026-10-13",
+      "startTime": "09:00",
+      "endTime": "09:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "要ABC team達標資料 · ABC team達標資料(LM)",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "recurring-1778723189386-2026-10-15",
+      "title": "確認代理獎金是否全匯入",
+      "date": "2026-10-15",
+      "startTime": "11:00",
+      "endTime": "11:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程",
+      "generated": true
+    },
+    {
+      "id": "process-401-request-2026-10-16",
+      "title": "獎金匯入ORCL",
+      "date": "2026-10-16",
+      "startTime": "09:00",
+      "endTime": "16:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "獎金發放流程 · 獎金匯入ORCL",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-1778634409321-main-2026-10-16",
+      "title": "要ABC team達標資料(Leen)",
+      "date": "2026-10-16",
+      "startTime": "10:00",
+      "endTime": "11:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "要ABC team達標資料 · 要ABC team達標資料(Leen)",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "recurring-1779180239432-2026-10-19",
+      "title": "特別加給匯入ORCL",
+      "date": "2026-10-19",
+      "startTime": "11:00",
+      "endTime": "11:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程",
+      "generated": true
+    },
+    {
+      "id": "process-401-bank-2026-10-19",
+      "title": "銀行匯款",
+      "date": "2026-10-19",
+      "startTime": "14:00",
+      "endTime": "15:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "銀行匯款",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-401-main-2026-10-20",
+      "title": "發獎金",
+      "date": "2026-10-20",
+      "startTime": "00:00",
+      "endTime": "00:01",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "每月獎金發放",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-1778569277085-step-1778569243104-2026-10-26",
+      "title": "華邦認證津貼請款",
+      "date": "2026-10-26",
+      "startTime": "09:00",
+      "endTime": "10:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "華邦認證津貼 · 華邦認證津貼請款",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "recurring-1778724845911-2026-10-29",
+      "title": "ORCL跑補充保費",
+      "date": "2026-10-29",
+      "startTime": "11:00",
+      "endTime": "11:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程",
+      "generated": true
+    },
+    {
+      "id": "recurring-1778634459491-2026-11-02",
+      "title": "要KVD",
+      "date": "2026-11-02",
+      "startTime": "10:00",
+      "endTime": "11:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程",
+      "generated": true
+    },
+    {
+      "id": "recurring-1778724912003-2026-11-02",
+      "title": "eFlow跑代理獎金",
+      "date": "2026-11-02",
+      "startTime": "11:00",
+      "endTime": "11:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程",
+      "generated": true
+    },
+    {
+      "id": "process-1778569277085-step-1-2026-11-04",
+      "title": "銀行匯款",
+      "date": "2026-11-04",
+      "startTime": "14:00",
+      "endTime": "15:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "華邦認證津貼 · 銀行匯款",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-1778569277085-main-2026-11-05",
+      "title": "華邦認證津貼發放",
+      "date": "2026-11-05",
+      "startTime": "00:00",
+      "endTime": "00:01",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "華邦認證津貼 · 華邦認證津貼發放",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-401-step-1778827334269-2026-11-10",
+      "title": "獎金請款",
+      "date": "2026-11-10",
+      "startTime": "09:00",
+      "endTime": "09:30",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "獎金請款",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-1778634409321-step-1778634307579-2026-11-11",
+      "title": "要Downtime",
+      "date": "2026-11-11",
+      "startTime": "09:15",
+      "endTime": "09:30",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "要ABC team達標資料 · 要Downtime",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-1778634409321-step-1-2026-11-13",
+      "title": "ABC team達標資料(LM)",
+      "date": "2026-11-13",
+      "startTime": "09:00",
+      "endTime": "09:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "要ABC team達標資料 · ABC team達標資料(LM)",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "recurring-1778723189386-2026-11-13",
+      "title": "確認代理獎金是否全匯入",
+      "date": "2026-11-13",
+      "startTime": "11:00",
+      "endTime": "11:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程",
+      "generated": true
+    },
+    {
+      "id": "process-401-request-2026-11-18",
+      "title": "獎金匯入ORCL",
+      "date": "2026-11-18",
+      "startTime": "09:00",
+      "endTime": "16:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "獎金發放流程 · 獎金匯入ORCL",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-1778634409321-main-2026-11-18",
+      "title": "要ABC team達標資料(Leen)",
+      "date": "2026-11-18",
+      "startTime": "10:00",
+      "endTime": "11:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "要ABC team達標資料 · 要ABC team達標資料(Leen)",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "recurring-1779180239432-2026-11-19",
+      "title": "特別加給匯入ORCL",
+      "date": "2026-11-19",
+      "startTime": "11:00",
+      "endTime": "11:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程",
+      "generated": true
+    },
+    {
+      "id": "process-401-bank-2026-11-19",
+      "title": "銀行匯款",
+      "date": "2026-11-19",
+      "startTime": "14:00",
+      "endTime": "15:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "銀行匯款",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-401-main-2026-11-20",
+      "title": "發獎金",
+      "date": "2026-11-20",
+      "startTime": "00:00",
+      "endTime": "00:01",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "每月獎金發放",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-1778569277085-step-1778569243104-2026-11-24",
+      "title": "華邦認證津貼請款",
+      "date": "2026-11-24",
+      "startTime": "09:00",
+      "endTime": "10:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "華邦認證津貼 · 華邦認證津貼請款",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "recurring-1778724845911-2026-11-27",
+      "title": "ORCL跑補充保費",
+      "date": "2026-11-27",
+      "startTime": "11:00",
+      "endTime": "11:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程",
+      "generated": true
+    },
+    {
+      "id": "recurring-1778724912003-2026-11-30",
+      "title": "eFlow跑代理獎金",
+      "date": "2026-11-30",
+      "startTime": "11:00",
+      "endTime": "11:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程",
+      "generated": true
+    },
+    {
+      "id": "recurring-1778634459491-2026-12-02",
+      "title": "要KVD",
+      "date": "2026-12-02",
+      "startTime": "10:00",
+      "endTime": "11:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程",
+      "generated": true
+    },
+    {
+      "id": "process-1778569277085-step-1-2026-12-03",
+      "title": "銀行匯款",
+      "date": "2026-12-03",
+      "startTime": "14:00",
+      "endTime": "15:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "華邦認證津貼 · 銀行匯款",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-1778569277085-main-2026-12-04",
+      "title": "華邦認證津貼發放",
+      "date": "2026-12-04",
+      "startTime": "00:00",
+      "endTime": "00:01",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "華邦認證津貼 · 華邦認證津貼發放",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-401-step-1778827334269-2026-12-08",
+      "title": "獎金請款",
+      "date": "2026-12-08",
+      "startTime": "09:00",
+      "endTime": "09:30",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "獎金請款",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-1778634409321-step-1778634307579-2026-12-11",
+      "title": "要Downtime",
+      "date": "2026-12-11",
+      "startTime": "09:15",
+      "endTime": "09:30",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "要ABC team達標資料 · 要Downtime",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-1778634409321-step-1-2026-12-15",
+      "title": "ABC team達標資料(LM)",
+      "date": "2026-12-15",
+      "startTime": "09:00",
+      "endTime": "09:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "要ABC team達標資料 · ABC team達標資料(LM)",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "recurring-1778723189386-2026-12-15",
+      "title": "確認代理獎金是否全匯入",
+      "date": "2026-12-15",
+      "startTime": "11:00",
+      "endTime": "11:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程",
+      "generated": true
+    },
+    {
+      "id": "process-401-request-2026-12-16",
+      "title": "獎金匯入ORCL",
+      "date": "2026-12-16",
+      "startTime": "09:00",
+      "endTime": "16:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "獎金發放流程 · 獎金匯入ORCL",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-401-bank-2026-12-17",
+      "title": "銀行匯款",
+      "date": "2026-12-17",
+      "startTime": "14:00",
+      "endTime": "15:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "銀行匯款",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-401-main-2026-12-18",
+      "title": "發獎金",
+      "date": "2026-12-18",
+      "startTime": "00:00",
+      "endTime": "00:01",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "每月獎金發放",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-1778634409321-main-2026-12-18",
+      "title": "要ABC team達標資料(Leen)",
+      "date": "2026-12-18",
+      "startTime": "10:00",
+      "endTime": "11:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "要ABC team達標資料 · 要ABC team達標資料(Leen)",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "recurring-1779180239432-2026-12-18",
+      "title": "特別加給匯入ORCL",
+      "date": "2026-12-18",
+      "startTime": "11:00",
+      "endTime": "11:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程",
+      "generated": true
+    },
+    {
+      "id": "recurring-1778724845911-2026-12-29",
+      "title": "ORCL跑補充保費",
+      "date": "2026-12-29",
+      "startTime": "11:00",
+      "endTime": "11:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程",
+      "generated": true
+    },
+    {
+      "id": "recurring-1778724912003-2026-12-31",
+      "title": "eFlow跑代理獎金",
+      "date": "2026-12-31",
+      "startTime": "11:00",
+      "endTime": "11:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程",
+      "generated": true
+    }
+  ],
+  "todos": [
+    {
+      "id": 1779673259903,
+      "title": "5/29請假",
+      "dueDate": "",
+      "createdDate": "2026-05-25",
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "summary": "",
+      "notes": "",
+      "reminder": "不提醒",
+      "completed": false
+    }
+  ],
+  "completedTodos": [
+    {
+      "id": 1779435478805,
+      "title": "跟Amy要Downtime",
+      "dueDate": "",
+      "createdDate": "2026-05-22",
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "summary": "",
+      "notes": "",
+      "completed": true,
+      "completedAt": "2026-05-25T17:09:01",
+      "completedDate": "2026-05-25"
+    },
+    {
+      "id": 1778835686957,
+      "title": "拿資料給小T",
+      "dueDate": "2026-05-18",
+      "createdDate": "2026-05-15",
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "summary": "",
+      "notes": "",
+      "completed": true,
+      "completedAt": "2026-05-18T16:16:05",
+      "completedDate": "2026-05-18"
+    },
+    {
+      "id": 1778568279983,
+      "title": "設備獎勵金送簽",
+      "dueDate": "2026-05-15",
+      "createdDate": "2026-05-13",
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "summary": "",
+      "notes": "",
+      "completed": true,
+      "completedAt": "2026-05-15T13:32:06",
+      "completedDate": "2026-05-15"
+    },
+    {
+      "id": 1778660617727,
+      "title": "問馥佑報名沒",
+      "dueDate": "",
+      "createdDate": "2026-05-13",
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "summary": "",
+      "notes": "",
+      "completed": true,
+      "completedAt": "2026-05-14T09:46:49",
+      "completedDate": "2026-05-14"
+    },
+    {
+      "id": 1778645712630,
+      "title": "整理工作內容",
+      "dueDate": "",
+      "createdDate": "2026-05-13",
+      "category": "個人",
+      "categoryColor": "#3b82f6",
+      "priority": "中",
+      "summary": "",
+      "notes": "",
+      "completed": true,
+      "completedAt": "2026-05-13T15:56:40",
+      "completedDate": "2026-05-13"
+    }
+  ]
+}</script>
+    <div class="shell">
+      <header class="hero">
+        <div>
+          <h1>Calendar Planner Web</h1>
+          <p>手機或瀏覽器可查看的唯讀版行事曆。資料來自桌機版匯出的 snapshot，不支援直接修改。</p>
+        </div>
+        <div class="toolbar">
+          <button id="reloadSnapshotButton" class="ghost" type="button">重新讀取</button>
+          <button id="loadSnapshotButton" class="primary" type="button">開啟 snapshot</button>
+          <input id="snapshotFileInput" class="hidden" type="file" accept=".json,application/json" />
+        </div>
+      </header>
+
+      <section class="card status-card">
+        <div class="row">
+          <div class="status" id="snapshotStatus">尚未載入唯讀資料，若同目錄有 snapshot 會自動讀取，否則可手動選擇 JSON 檔。</div>
+          <div class="status" id="snapshotMeta"></div>
+        </div>
+      </section>
+
+      <div class="tabbar">
+        <button class="tab active" data-tab="today" type="button">今日</button>
+        <button class="tab" data-tab="week" type="button">本週</button>
+        <button class="tab" data-tab="month" type="button">月曆</button>
+        <button class="tab" data-tab="search" type="button">搜尋</button>
+      </div>
+
+      <section id="todayView" class="card section">
+        <h2 id="todayHeading">今日</h2>
+        <div class="summary-grid" id="todaySummary"></div>
+        <div class="stack" id="todayEvents" style="margin-top: 16px"></div>
+      </section>
+
+      <section id="weekView" class="card section hidden">
+        <div class="row">
+          <h2 id="weekHeading">本週</h2>
+          <div class="toolbar">
+            <button id="prevWeekReadonly" class="ghost" type="button">上一週</button>
+            <button id="todayWeekReadonly" class="ghost" type="button">回到本週</button>
+            <button id="nextWeekReadonly" class="ghost" type="button">下一週</button>
+          </div>
+        </div>
+        <div class="week-groups" id="weekGroups"></div>
+      </section>
+
+      <section id="monthView" class="card section hidden">
+        <div class="month-header">
+          <div class="summary-inline">
+            <h2 id="monthHeading">月曆</h2>
+            <button id="prevMonthReadonly" class="ghost" type="button">◀</button>
+            <button id="todayMonthReadonly" class="ghost" type="button">回到本月</button>
+            <button id="nextMonthReadonly" class="ghost" type="button">▶</button>
+          </div>
+        </div>
+        <div class="calendar-grid" id="monthGrid"></div>
+      </section>
+
+      <section id="searchView" class="card section hidden">
+        <h2>搜尋</h2>
+        <div class="search-box">
+          <input
+            id="searchKeyword"
+            class="field"
+            type="text"
+            placeholder="輸入關鍵字，例如：會議 / 健身 / 請款"
+          />
+        </div>
+        <div class="filters">
+          <button class="chip active" data-filter="all" type="button">全部</button>
+          <button class="chip" data-filter="event" type="button">行程</button>
+          <button class="chip" data-filter="todo" type="button">待辦</button>
+          <button class="chip" data-filter="completed" type="button">已完成</button>
+          <input id="searchStartDate" class="field" type="text" placeholder="起始 YYYY/MM/DD" />
+          <input id="searchEndDate" class="field" type="text" placeholder="結束 YYYY/MM/DD" />
+        </div>
+        <div class="stack" id="searchResults"></div>
+      </section>
+
+      <p class="footer-note">
+        這是唯讀版 Web 檢視頁。若要更新資料，請回桌機版重新匯出
+        <code>calendar-planner-readonly-snapshot.json</code>。
+      </p>
+    </div>
+
+    <script>
+      const SNAPSHOT_FILE = "calendar-planner-readonly-snapshot.json";
+      const TAB_IDS = ["today", "week", "month", "search"];
+      const WEEKDAY_NAMES = ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"];
+      const WEEKDAY_SHORT = ["日", "一", "二", "三", "四", "五", "六"];
+
+      let snapshot = null;
+      let activeTab = "today";
+      let weekAnchor = todayIso();
+      let monthAnchor = todayIso().slice(0, 7);
+      let searchFilter = "all";
+
+      function todayIso() {
+        const now = new Date();
+        return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+      }
+
+      function pad(value) {
+        return String(value).padStart(2, "0");
+      }
+
+      function parseIsoDate(iso) {
+        const parts = String(iso || "").split("-").map(Number);
+        if (parts.length !== 3 || parts.some((part) => Number.isNaN(part))) return null;
+        return new Date(parts[0], parts[1] - 1, parts[2]);
+      }
+
+      function addDays(iso, days) {
+        const date = parseIsoDate(iso);
+        if (!date) return iso;
+        date.setDate(date.getDate() + days);
+        return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+      }
+
+      function getWeekStart(iso) {
+        const date = parseIsoDate(iso);
+        if (!date) return iso;
+        date.setDate(date.getDate() - date.getDay());
+        return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+      }
+
+      function timeValue(value) {
+        const match = /^(\d{2}):(\d{2})$/.exec(String(value || ""));
+        if (!match) return Number.MAX_SAFE_INTEGER;
+        return Number(match[1]) * 60 + Number(match[2]);
+      }
+
+      function formatDisplayDate(iso) {
+        const date = parseIsoDate(iso);
+        if (!date) return iso || "";
+        return `${date.getMonth() + 1}月${date.getDate()}日 ${WEEKDAY_NAMES[date.getDay()]}`;
+      }
+
+      function formatMonthLabel(monthIso) {
+        const [year, month] = String(monthIso || "").split("-").map(Number);
+        if (!year || !month) return monthIso || "";
+        return `${year}年${month}月`;
+      }
+
+      function formatDateInput(value) {
+        const normalized = String(value || "").trim().replace(/\./g, "/").replace(/-/g, "/");
+        const match = /^(\d{4})\/(\d{1,2})\/(\d{1,2})$/.exec(normalized);
+        if (!match) return "";
+        return `${match[1]}-${pad(match[2])}-${pad(match[3])}`;
+      }
+
+      function escapeHtml(value) {
+        return String(value || "")
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#39;");
+      }
+
+      function uniqueTextParts(parts) {
+        const seen = new Set();
+        return parts.filter((part) => {
+          const text = String(part || "").trim();
+          if (!text) return false;
+          const key = text.toLowerCase();
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+      }
+
+      function getCategoryBadge(label, color) {
+        const background = color ? `${color}1a` : "var(--accent-soft)";
+        const border = color ? `${color}33` : "rgba(249, 115, 22, 0.16)";
+        const text = color || "#7c2d12";
+        return `<span class="badge" style="background:${background};border-color:${border};color:${text};">${escapeHtml(label || "未分類")}</span>`;
+      }
+
+      function getSnapshotEvents() {
+        return Array.isArray(snapshot?.events) ? snapshot.events : [];
+      }
+
+      function getSnapshotTodos() {
+        return Array.isArray(snapshot?.todos) ? snapshot.todos : [];
+      }
+
+      function getSnapshotCompletedTodos() {
+        return Array.isArray(snapshot?.completedTodos) ? snapshot.completedTodos : [];
+      }
+
+      function eventsForDate(iso) {
+        return getSnapshotEvents()
+          .filter((event) => event.date === iso)
+          .sort((a, b) => timeValue(a.startTime) - timeValue(b.startTime));
+      }
+
+      function todosForDate(iso) {
+        return getSnapshotTodos().filter((todo) => todo.dueDate === iso);
+      }
+
+      function completedForDate(iso) {
+        return getSnapshotCompletedTodos().filter((todo) => {
+          const compareDate = todo.completedDate || String(todo.completedAt || "").slice(0, 10);
+          return compareDate === iso;
+        });
+      }
+
+      function renderEventCard(event) {
+        const meta = uniqueTextParts([
+          event.allDay ? "全天" : `${event.startTime || "--:--"} - ${event.endTime || "--:--"}`,
+          event.location,
+          event.origin
+        ]);
+        const note = uniqueTextParts([event.summary, event.notes]);
+        return `
+          <article class="event-card">
+            <div class="row">
+              <div>
+                <p class="eyebrow">${escapeHtml(formatDisplayDate(event.date))}</p>
+                <h3 class="title">${escapeHtml(event.title)}</h3>
+              </div>
+              ${getCategoryBadge(event.category, event.categoryColor)}
+            </div>
+            <p class="meta">${meta.length ? meta.map(escapeHtml).join(" ・ ") : "沒有額外資訊"}</p>
+            ${note.length ? `<p class="meta">${note.map(escapeHtml).join(" ・ ")}</p>` : ""}
+          </article>
+        `;
+      }
+
+      function renderTodoCard(todo, completed = false) {
+        const meta = [];
+        if (todo.dueDate) meta.push(`截止 ${todo.dueDate}`);
+        if (completed) {
+          const completedText = todo.completedAt
+            ? new Date(todo.completedAt).toLocaleString("zh-TW")
+            : todo.completedDate || "";
+          if (completedText) meta.push(`完成於 ${completedText}`);
+        }
+        const note = uniqueTextParts([todo.summary, todo.notes]);
+        return `
+          <article class="todo-card">
+            <div class="row">
+              <div>
+                <p class="eyebrow">${completed ? "已完成待辦" : "待辦"}</p>
+                <h3 class="title">${escapeHtml(todo.title)}</h3>
+              </div>
+              ${getCategoryBadge(todo.category, todo.categoryColor)}
+            </div>
+            <p class="meta">${meta.length ? meta.map(escapeHtml).join(" ・ ") : "沒有額外資訊"}</p>
+            ${note.length ? `<p class="meta">${note.map(escapeHtml).join(" ・ ")}</p>` : ""}
+          </article>
+        `;
+      }
+
+      function renderToday() {
+        const today = todayIso();
+        document.getElementById("todayHeading").textContent = `${formatDisplayDate(today)} 的內容`;
+        const todaysEvents = eventsForDate(today);
+        const todaysTodos = todosForDate(today);
+        const todaysCompleted = completedForDate(today);
+
+        document.getElementById("todaySummary").innerHTML = `
+          <div class="summary-box">
+            <p class="eyebrow">今日行程</p>
+            <p class="value">${todaysEvents.length}</p>
+          </div>
+          <div class="summary-box">
+            <p class="eyebrow">待辦到期</p>
+            <p class="value">${todaysTodos.length}</p>
+          </div>
+          <div class="summary-box">
+            <p class="eyebrow">今日完成</p>
+            <p class="value">${todaysCompleted.length}</p>
+          </div>
+        `;
+
+        const chunks = [
+          ...todaysEvents.map(renderEventCard),
+          ...todaysTodos.map((item) => renderTodoCard(item, false)),
+          ...todaysCompleted.map((item) => renderTodoCard(item, true))
+        ];
+
+        document.getElementById("todayEvents").innerHTML = chunks.length
+          ? chunks.join("")
+          : '<div class="empty">今天沒有資料。</div>';
+      }
+
+      function renderWeek() {
+        const start = getWeekStart(weekAnchor);
+        const end = addDays(start, 6);
+        document.getElementById("weekHeading").textContent = `${formatDisplayDate(start)} 到 ${formatDisplayDate(end)}`;
+
+        const blocks = [];
+        for (let offset = 0; offset < 7; offset += 1) {
+          const iso = addDays(start, offset);
+          const rows = [
+            ...eventsForDate(iso).map(renderEventCard),
+            ...todosForDate(iso).map((item) => renderTodoCard(item, false)),
+            ...completedForDate(iso).map((item) => renderTodoCard(item, true))
+          ];
+          blocks.push(`
+            <section class="week-group">
+              <h3>${escapeHtml(formatDisplayDate(iso))}</h3>
+              <div class="stack">${rows.length ? rows.join("") : '<div class="empty">這一天沒有資料。</div>'}</div>
+            </section>
+          `);
+        }
+
+        document.getElementById("weekGroups").innerHTML = blocks.join("");
+      }
+
+      function renderMonth() {
+        document.getElementById("monthHeading").textContent = formatMonthLabel(monthAnchor);
+        const [year, month] = monthAnchor.split("-").map(Number);
+        const first = new Date(year, month - 1, 1);
+        const start = new Date(first);
+        start.setDate(start.getDate() - start.getDay());
+        const today = todayIso();
+        const cells = WEEKDAY_SHORT.map((name) => `<div class="weekday">${name}</div>`);
+
+        for (let index = 0; index < 42; index += 1) {
+          const date = new Date(start);
+          date.setDate(start.getDate() + index);
+          const iso = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+          const inMonth = date.getMonth() + 1 === month;
+          const isToday = iso === today;
+          const isPast = iso < today;
+          const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+          const items = eventsForDate(iso).slice(0, 3);
+
+          cells.push(`
+            <article class="day-card ${isToday ? "today" : ""} ${isPast ? "past" : ""} ${isWeekend ? "weekend" : ""}" style="${inMonth ? "" : "opacity:.42;"}">
+              <div class="day-number">${date.getDate()}</div>
+              ${items
+                .map((item) => {
+                  const bg = item.categoryColor ? `${item.categoryColor}1a` : "var(--accent-soft)";
+                  const fg = item.categoryColor || "#7c2d12";
+                  const text = item.allDay ? `全天 ${item.title}` : `${item.startTime || ""} ${item.title}`;
+                  return `<div class="mini-event" style="background:${bg};color:${fg};">${escapeHtml(text.trim())}</div>`;
+                })
+                .join("")}
+            </article>
+          `);
+        }
+
+        document.getElementById("monthGrid").innerHTML = cells.join("");
+      }
+
+      function renderSearch() {
+        const keyword = document.getElementById("searchKeyword").value.trim().toLowerCase();
+        const startDate = formatDateInput(document.getElementById("searchStartDate").value);
+        const endDate = formatDateInput(document.getElementById("searchEndDate").value);
+        const results = [];
+
+        if (searchFilter === "all" || searchFilter === "event") {
+          getSnapshotEvents().forEach((item) => {
+            const haystack = [item.title, item.location, item.summary, item.notes, item.origin].join(" ").toLowerCase();
+            if (keyword && !haystack.includes(keyword)) return;
+            if (startDate && item.date < startDate) return;
+            if (endDate && item.date > endDate) return;
+            results.push({ sortDate: item.date, markup: renderEventCard(item) });
+          });
+        }
+
+        if (searchFilter === "all" || searchFilter === "todo") {
+          getSnapshotTodos().forEach((item) => {
+            const haystack = [item.title, item.summary, item.notes].join(" ").toLowerCase();
+            if (keyword && !haystack.includes(keyword)) return;
+            const compareDate = item.dueDate || item.createdDate || "";
+            if (startDate && compareDate && compareDate < startDate) return;
+            if (endDate && compareDate && compareDate > endDate) return;
+            results.push({ sortDate: compareDate || "9999-12-31", markup: renderTodoCard(item, false) });
+          });
+        }
+
+        if (searchFilter === "all" || searchFilter === "completed") {
+          getSnapshotCompletedTodos().forEach((item) => {
+            const haystack = [item.title, item.summary, item.notes].join(" ").toLowerCase();
+            if (keyword && !haystack.includes(keyword)) return;
+            const compareDate = item.completedDate || String(item.completedAt || "").slice(0, 10) || "";
+            if (startDate && compareDate && compareDate < startDate) return;
+            if (endDate && compareDate && compareDate > endDate) return;
+            results.push({ sortDate: compareDate || "9999-12-31", markup: renderTodoCard(item, true) });
+          });
+        }
+
+        results.sort((a, b) => a.sortDate.localeCompare(b.sortDate));
+        document.getElementById("searchResults").innerHTML = results.length
+          ? results.map((item) => item.markup).join("")
+          : '<div class="empty">找不到符合條件的資料。</div>';
+      }
+
+      function renderActiveTab() {
+        TAB_IDS.forEach((id) => {
+          const section = document.getElementById(`${id}View`);
+          const tab = document.querySelector(`[data-tab="${id}"]`);
+          section.classList.toggle("hidden", id !== activeTab);
+          tab.classList.toggle("active", id === activeTab);
+        });
+        if (!snapshot) return;
+        if (activeTab === "today") renderToday();
+        if (activeTab === "week") renderWeek();
+        if (activeTab === "month") renderMonth();
+        if (activeTab === "search") renderSearch();
+      }
+
+      function loadEmbeddedSnapshot() {
+        const rawText = document.getElementById("embeddedReadonlySnapshot")?.textContent?.trim();
+        if (!rawText || rawText === "{
+  "format": "calendar-planner-readonly-web",
+  "exportedAt": "2026-05-26T02:53:40.071Z",
+  "appVersion": "0.1.37",
+  "currentDate": "2026-05-26",
+  "range": {
+    "from": "2025-05-21",
+    "to": "2028-06-04"
+  },
+  "categories": [
+    {
+      "name": "工作",
+      "color": "#f97316"
+    },
+    {
+      "name": "個人",
+      "color": "#3b82f6"
+    }
+  ],
+  "events": [
+    {
+      "id": "process-401-step-1778827334269-2026-05-08",
+      "title": "獎金請款",
+      "date": "2026-05-08",
+      "startTime": "09:00",
+      "endTime": "09:30",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "獎金請款",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "1778639992680",
+      "title": "新訓",
+      "date": "2026-05-14",
+      "startTime": "08:50",
+      "endTime": "09:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "5F 訓練教室",
+      "summary": "",
+      "notes": "",
+      "origin": "",
+      "generated": false
+    },
+    {
+      "id": "1778640126649",
+      "title": "員旅一日遊",
+      "date": "2026-05-17",
+      "startTime": "",
+      "endTime": "",
+      "allDay": true,
+      "category": "個人",
+      "categoryColor": "#3b82f6",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "",
+      "generated": false
+    },
+    {
+      "id": "1779085965912",
+      "title": "獎金匯入ORCL",
+      "date": "2026-05-18",
+      "startTime": "09:00",
+      "endTime": "16:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "獎金發放流程 · 獎金匯入ORCL",
+      "origin": "固定流程例外",
+      "generated": false
+    },
+    {
+      "id": "1778639996884",
+      "title": "新訓",
+      "date": "2026-05-19",
+      "startTime": "08:50",
+      "endTime": "09:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "108會議室",
+      "summary": "",
+      "notes": "",
+      "origin": "",
+      "generated": false
+    },
+    {
+      "id": "1778805700043",
+      "title": "確認代理獎金是否全匯入",
+      "date": "2026-05-19",
+      "startTime": "11:00",
+      "endTime": "11:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "",
+      "generated": false
+    },
+    {
+      "id": "recurring-1779180239432-2026-05-19",
+      "title": "特別加給匯入ORCL",
+      "date": "2026-05-19",
+      "startTime": "11:00",
+      "endTime": "11:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程",
+      "generated": true
+    },
+    {
+      "id": "1778751132528",
+      "title": "銀行匯款",
+      "date": "2026-05-19",
+      "startTime": "13:35",
+      "endTime": "15:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "銀行匯款",
+      "origin": "固定流程例外",
+      "generated": false
+    },
+    {
+      "id": "1778836405694",
+      "title": "發獎金",
+      "date": "2026-05-20",
+      "startTime": "00:00",
+      "endTime": "00:05",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "每月獎金發放",
+      "origin": "固定流程例外",
+      "generated": false
+    },
+    {
+      "id": "1778640236247",
+      "title": "久任表揚大會",
+      "date": "2026-05-20",
+      "startTime": "08:30",
+      "endTime": "12:30",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "B15 9F",
+      "summary": "",
+      "notes": "",
+      "origin": "",
+      "generated": false
+    },
+    {
+      "id": "1779086264388",
+      "title": "C team訂餐",
+      "date": "2026-05-20",
+      "startTime": "15:00",
+      "endTime": "16:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "",
+      "generated": false
+    },
+    {
+      "id": "1778824437776",
+      "title": "C team",
+      "date": "2026-05-21",
+      "startTime": "11:00",
+      "endTime": "12:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "800",
+      "summary": "",
+      "notes": "取餐",
+      "origin": "",
+      "generated": false
+    },
+    {
+      "id": "1778640050371",
+      "title": "中午請假",
+      "date": "2026-05-21",
+      "startTime": "11:30",
+      "endTime": "14:45",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "",
+      "generated": false
+    },
+    {
+      "id": "1779265047619",
+      "title": "回存明細送簽",
+      "date": "2026-05-22",
+      "startTime": "10:00",
+      "endTime": "10:05",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "",
+      "generated": false
+    },
+    {
+      "id": "1779435548860",
+      "title": "達標簽呈",
+      "date": "2026-05-25",
+      "startTime": "09:00",
+      "endTime": "09:30",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "",
+      "generated": false
+    },
+    {
+      "id": "1779265140498",
+      "title": "華邦認證津貼請款",
+      "date": "2026-05-25",
+      "startTime": "09:30",
+      "endTime": "10:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "華邦認證津貼 · 華邦認證津貼請款",
+      "origin": "",
+      "generated": false
+    },
+    {
+      "id": "1778662496628",
+      "title": "ADM月會",
+      "date": "2026-05-25",
+      "startTime": "10:30",
+      "endTime": "12:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "5F訓練教室",
+      "summary": "",
+      "notes": "",
+      "origin": "",
+      "generated": false
+    },
+    {
+      "id": "1779700138154",
+      "title": "各項達標獎金發放",
+      "date": "2026-05-26",
+      "startTime": "11:00",
+      "endTime": "12:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "",
+      "generated": false
+    },
+    {
+      "id": "1779673325313",
+      "title": "ORCL跑補充保費",
+      "date": "2026-05-27",
+      "startTime": "11:00",
+      "endTime": "11:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程例外",
+      "generated": false
+    },
+    {
+      "id": "recurring-1778724912003-2026-06-01",
+      "title": "eFlow跑代理獎金",
+      "date": "2026-06-01",
+      "startTime": "11:00",
+      "endTime": "11:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程",
+      "generated": true
+    },
+    {
+      "id": "1779673120325",
+      "title": "新訓",
+      "date": "2026-06-02",
+      "startTime": "08:50",
+      "endTime": "09:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "108會議室",
+      "summary": "",
+      "notes": "",
+      "origin": "",
+      "generated": false
+    },
+    {
+      "id": "1779438878192",
+      "title": "新增6/1底薪生效的晉升人員",
+      "date": "2026-06-02",
+      "startTime": "09:00",
+      "endTime": "09:05",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "30816陳心怡",
+      "origin": "",
+      "generated": false
+    },
+    {
+      "id": "1779154282950",
+      "title": "生產獎金會議",
+      "date": "2026-06-02",
+      "startTime": "10:00",
+      "endTime": "10:45",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "",
+      "generated": false
+    },
+    {
+      "id": "1779154319646",
+      "title": "要KVD",
+      "date": "2026-06-02",
+      "startTime": "10:45",
+      "endTime": "11:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程例外",
+      "generated": false
+    },
+    {
+      "id": "1779441673497",
+      "title": "讀書會",
+      "date": "2026-06-02",
+      "startTime": "12:30",
+      "endTime": "13:30",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "",
+      "generated": false
+    },
+    {
+      "id": "process-1778569277085-step-1-2026-06-04",
+      "title": "銀行匯款",
+      "date": "2026-06-04",
+      "startTime": "14:00",
+      "endTime": "15:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "華邦認證津貼 · 銀行匯款",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "1778809456145",
+      "title": "華邦認證津貼發放",
+      "date": "2026-06-05",
+      "startTime": "00:00",
+      "endTime": "00:02",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "華邦認證津貼 · 華邦認證津貼發放",
+      "origin": "固定流程例外",
+      "generated": false
+    },
+    {
+      "id": "process-401-step-1778827334269-2026-06-09",
+      "title": "獎金請款",
+      "date": "2026-06-09",
+      "startTime": "09:00",
+      "endTime": "09:30",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "獎金請款",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "1779673177042",
+      "title": "新訓",
+      "date": "2026-06-11",
+      "startTime": "08:50",
+      "endTime": "09:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "108會議室",
+      "summary": "",
+      "notes": "",
+      "origin": "",
+      "generated": false
+    },
+    {
+      "id": "process-1778634409321-step-1778634307579-2026-06-11",
+      "title": "要Downtime",
+      "date": "2026-06-11",
+      "startTime": "09:15",
+      "endTime": "09:30",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "要ABC team達標資料 · 要Downtime",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "1779441663693",
+      "title": "讀書會",
+      "date": "2026-06-11",
+      "startTime": "12:30",
+      "endTime": "13:30",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "",
+      "generated": false
+    },
+    {
+      "id": "process-1778634409321-step-1-2026-06-15",
+      "title": "ABC team達標資料(LM)",
+      "date": "2026-06-15",
+      "startTime": "09:00",
+      "endTime": "09:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "要ABC team達標資料 · ABC team達標資料(LM)",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "recurring-1778723189386-2026-06-15",
+      "title": "確認代理獎金是否全匯入",
+      "date": "2026-06-15",
+      "startTime": "11:00",
+      "endTime": "11:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程",
+      "generated": true
+    },
+    {
+      "id": "process-401-request-2026-06-17",
+      "title": "獎金匯入ORCL",
+      "date": "2026-06-17",
+      "startTime": "09:00",
+      "endTime": "16:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "獎金發放流程 · 獎金匯入ORCL",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-1778634409321-main-2026-06-18",
+      "title": "要ABC team達標資料(Leen)",
+      "date": "2026-06-18",
+      "startTime": "10:00",
+      "endTime": "11:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "要ABC team達標資料 · 要ABC team達標資料(Leen)",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-401-bank-2026-06-18",
+      "title": "銀行匯款",
+      "date": "2026-06-18",
+      "startTime": "14:00",
+      "endTime": "15:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "銀行匯款",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-401-main-2026-06-19",
+      "title": "發獎金",
+      "date": "2026-06-19",
+      "startTime": "00:00",
+      "endTime": "00:01",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "每月獎金發放",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "recurring-1779180239432-2026-06-19",
+      "title": "特別加給匯入ORCL",
+      "date": "2026-06-19",
+      "startTime": "11:00",
+      "endTime": "11:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程",
+      "generated": true
+    },
+    {
+      "id": "1779265160735",
+      "title": "華邦認證津貼請款",
+      "date": "2026-06-23",
+      "startTime": "09:30",
+      "endTime": "10:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "華邦認證津貼 · 華邦認證津貼請款",
+      "origin": "固定流程例外",
+      "generated": false
+    },
+    {
+      "id": "1778660667574",
+      "title": "體適能科技檢測活動",
+      "date": "2026-06-24",
+      "startTime": "15:30",
+      "endTime": "16:30",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "聯合辦公大樓5樓 國際會議廳(保健所樓上)",
+      "summary": "",
+      "notes": "攜帶健保卡",
+      "origin": "",
+      "generated": false
+    },
+    {
+      "id": "recurring-1778724845911-2026-06-29",
+      "title": "ORCL跑補充保費",
+      "date": "2026-06-29",
+      "startTime": "11:00",
+      "endTime": "11:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程",
+      "generated": true
+    },
+    {
+      "id": "recurring-1778724912003-2026-06-30",
+      "title": "eFlow跑代理獎金",
+      "date": "2026-06-30",
+      "startTime": "11:00",
+      "endTime": "11:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程",
+      "generated": true
+    },
+    {
+      "id": "1779438888299",
+      "title": "新增7/1底薪生效的晉升人員",
+      "date": "2026-07-02",
+      "startTime": "09:00",
+      "endTime": "09:05",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "30833蔡濬任\n30850林米婕里",
+      "origin": "",
+      "generated": false
+    },
+    {
+      "id": "recurring-1778634459491-2026-07-02",
+      "title": "要KVD",
+      "date": "2026-07-02",
+      "startTime": "10:00",
+      "endTime": "11:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程",
+      "generated": true
+    },
+    {
+      "id": "process-1778569277085-step-1-2026-07-02",
+      "title": "銀行匯款",
+      "date": "2026-07-02",
+      "startTime": "14:00",
+      "endTime": "15:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "華邦認證津貼 · 銀行匯款",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-1778569277085-main-2026-07-03",
+      "title": "華邦認證津貼發放",
+      "date": "2026-07-03",
+      "startTime": "00:00",
+      "endTime": "00:01",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "華邦認證津貼 · 華邦認證津貼發放",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-401-step-1778827334269-2026-07-08",
+      "title": "獎金請款",
+      "date": "2026-07-08",
+      "startTime": "09:00",
+      "endTime": "09:30",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "獎金請款",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-1778634409321-step-1778634307579-2026-07-10",
+      "title": "要Downtime",
+      "date": "2026-07-10",
+      "startTime": "09:15",
+      "endTime": "09:30",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "要ABC team達標資料 · 要Downtime",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-1778634409321-step-1-2026-07-14",
+      "title": "ABC team達標資料(LM)",
+      "date": "2026-07-14",
+      "startTime": "09:00",
+      "endTime": "09:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "要ABC team達標資料 · ABC team達標資料(LM)",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "recurring-1778723189386-2026-07-15",
+      "title": "確認代理獎金是否全匯入",
+      "date": "2026-07-15",
+      "startTime": "11:00",
+      "endTime": "11:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程",
+      "generated": true
+    },
+    {
+      "id": "process-401-request-2026-07-16",
+      "title": "獎金匯入ORCL",
+      "date": "2026-07-16",
+      "startTime": "09:00",
+      "endTime": "16:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "獎金發放流程 · 獎金匯入ORCL",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-1778634409321-main-2026-07-17",
+      "title": "要ABC team達標資料(Leen)",
+      "date": "2026-07-17",
+      "startTime": "10:00",
+      "endTime": "11:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "要ABC team達標資料 · 要ABC team達標資料(Leen)",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "recurring-1779180239432-2026-07-17",
+      "title": "特別加給匯入ORCL",
+      "date": "2026-07-17",
+      "startTime": "11:00",
+      "endTime": "11:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程",
+      "generated": true
+    },
+    {
+      "id": "process-401-bank-2026-07-17",
+      "title": "銀行匯款",
+      "date": "2026-07-17",
+      "startTime": "14:00",
+      "endTime": "15:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "銀行匯款",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-401-main-2026-07-20",
+      "title": "發獎金",
+      "date": "2026-07-20",
+      "startTime": "00:00",
+      "endTime": "00:01",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "每月獎金發放",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-1778569277085-step-1778569243104-2026-07-24",
+      "title": "華邦認證津貼請款",
+      "date": "2026-07-24",
+      "startTime": "09:00",
+      "endTime": "10:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "華邦認證津貼 · 華邦認證津貼請款",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "recurring-1778724845911-2026-07-29",
+      "title": "ORCL跑補充保費",
+      "date": "2026-07-29",
+      "startTime": "11:00",
+      "endTime": "11:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程",
+      "generated": true
+    },
+    {
+      "id": "recurring-1778724912003-2026-07-31",
+      "title": "eFlow跑代理獎金",
+      "date": "2026-07-31",
+      "startTime": "11:00",
+      "endTime": "11:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程",
+      "generated": true
+    },
+    {
+      "id": "recurring-1778634459491-2026-08-03",
+      "title": "要KVD",
+      "date": "2026-08-03",
+      "startTime": "10:00",
+      "endTime": "11:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程",
+      "generated": true
+    },
+    {
+      "id": "process-1778569277085-step-1-2026-08-04",
+      "title": "銀行匯款",
+      "date": "2026-08-04",
+      "startTime": "14:00",
+      "endTime": "15:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "華邦認證津貼 · 銀行匯款",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-1778569277085-main-2026-08-05",
+      "title": "華邦認證津貼發放",
+      "date": "2026-08-05",
+      "startTime": "00:00",
+      "endTime": "00:01",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "華邦認證津貼 · 華邦認證津貼發放",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-401-step-1778827334269-2026-08-10",
+      "title": "獎金請款",
+      "date": "2026-08-10",
+      "startTime": "09:00",
+      "endTime": "09:30",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "獎金請款",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-1778634409321-step-1778634307579-2026-08-11",
+      "title": "要Downtime",
+      "date": "2026-08-11",
+      "startTime": "09:15",
+      "endTime": "09:30",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "要ABC team達標資料 · 要Downtime",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-1778634409321-step-1-2026-08-13",
+      "title": "ABC team達標資料(LM)",
+      "date": "2026-08-13",
+      "startTime": "09:00",
+      "endTime": "09:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "要ABC team達標資料 · ABC team達標資料(LM)",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "recurring-1778723189386-2026-08-14",
+      "title": "確認代理獎金是否全匯入",
+      "date": "2026-08-14",
+      "startTime": "11:00",
+      "endTime": "11:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程",
+      "generated": true
+    },
+    {
+      "id": "process-401-request-2026-08-18",
+      "title": "獎金匯入ORCL",
+      "date": "2026-08-18",
+      "startTime": "09:00",
+      "endTime": "16:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "獎金發放流程 · 獎金匯入ORCL",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-1778634409321-main-2026-08-18",
+      "title": "要ABC team達標資料(Leen)",
+      "date": "2026-08-18",
+      "startTime": "10:00",
+      "endTime": "11:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "要ABC team達標資料 · 要ABC team達標資料(Leen)",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "recurring-1779180239432-2026-08-19",
+      "title": "特別加給匯入ORCL",
+      "date": "2026-08-19",
+      "startTime": "11:00",
+      "endTime": "11:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程",
+      "generated": true
+    },
+    {
+      "id": "process-401-bank-2026-08-19",
+      "title": "銀行匯款",
+      "date": "2026-08-19",
+      "startTime": "14:00",
+      "endTime": "15:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "銀行匯款",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-401-main-2026-08-20",
+      "title": "發獎金",
+      "date": "2026-08-20",
+      "startTime": "00:00",
+      "endTime": "00:01",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "每月獎金發放",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-1778569277085-step-1778569243104-2026-08-25",
+      "title": "華邦認證津貼請款",
+      "date": "2026-08-25",
+      "startTime": "09:00",
+      "endTime": "10:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "華邦認證津貼 · 華邦認證津貼請款",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "recurring-1778724845911-2026-08-28",
+      "title": "ORCL跑補充保費",
+      "date": "2026-08-28",
+      "startTime": "11:00",
+      "endTime": "11:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程",
+      "generated": true
+    },
+    {
+      "id": "recurring-1778724912003-2026-08-31",
+      "title": "eFlow跑代理獎金",
+      "date": "2026-08-31",
+      "startTime": "11:00",
+      "endTime": "11:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程",
+      "generated": true
+    },
+    {
+      "id": "recurring-1778634459491-2026-09-02",
+      "title": "要KVD",
+      "date": "2026-09-02",
+      "startTime": "10:00",
+      "endTime": "11:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程",
+      "generated": true
+    },
+    {
+      "id": "process-1778569277085-step-1-2026-09-03",
+      "title": "銀行匯款",
+      "date": "2026-09-03",
+      "startTime": "14:00",
+      "endTime": "15:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "華邦認證津貼 · 銀行匯款",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-1778569277085-main-2026-09-04",
+      "title": "華邦認證津貼發放",
+      "date": "2026-09-04",
+      "startTime": "00:00",
+      "endTime": "00:01",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "華邦認證津貼 · 華邦認證津貼發放",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-401-step-1778827334269-2026-09-08",
+      "title": "獎金請款",
+      "date": "2026-09-08",
+      "startTime": "09:00",
+      "endTime": "09:30",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "獎金請款",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-1778634409321-step-1778634307579-2026-09-11",
+      "title": "要Downtime",
+      "date": "2026-09-11",
+      "startTime": "09:15",
+      "endTime": "09:30",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "要ABC team達標資料 · 要Downtime",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-1778634409321-step-1-2026-09-15",
+      "title": "ABC team達標資料(LM)",
+      "date": "2026-09-15",
+      "startTime": "09:00",
+      "endTime": "09:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "要ABC team達標資料 · ABC team達標資料(LM)",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "recurring-1778723189386-2026-09-15",
+      "title": "確認代理獎金是否全匯入",
+      "date": "2026-09-15",
+      "startTime": "11:00",
+      "endTime": "11:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程",
+      "generated": true
+    },
+    {
+      "id": "process-401-request-2026-09-16",
+      "title": "獎金匯入ORCL",
+      "date": "2026-09-16",
+      "startTime": "09:00",
+      "endTime": "16:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "獎金發放流程 · 獎金匯入ORCL",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-401-bank-2026-09-17",
+      "title": "銀行匯款",
+      "date": "2026-09-17",
+      "startTime": "14:00",
+      "endTime": "15:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "銀行匯款",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-401-main-2026-09-18",
+      "title": "發獎金",
+      "date": "2026-09-18",
+      "startTime": "00:00",
+      "endTime": "00:01",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "每月獎金發放",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-1778634409321-main-2026-09-18",
+      "title": "要ABC team達標資料(Leen)",
+      "date": "2026-09-18",
+      "startTime": "10:00",
+      "endTime": "11:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "要ABC team達標資料 · 要ABC team達標資料(Leen)",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "recurring-1779180239432-2026-09-18",
+      "title": "特別加給匯入ORCL",
+      "date": "2026-09-18",
+      "startTime": "11:00",
+      "endTime": "11:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程",
+      "generated": true
+    },
+    {
+      "id": "process-1778569277085-step-1778569243104-2026-09-23",
+      "title": "華邦認證津貼請款",
+      "date": "2026-09-23",
+      "startTime": "09:00",
+      "endTime": "10:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "華邦認證津貼 · 華邦認證津貼請款",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "recurring-1778724845911-2026-09-29",
+      "title": "ORCL跑補充保費",
+      "date": "2026-09-29",
+      "startTime": "11:00",
+      "endTime": "11:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程",
+      "generated": true
+    },
+    {
+      "id": "recurring-1778724912003-2026-09-30",
+      "title": "eFlow跑代理獎金",
+      "date": "2026-09-30",
+      "startTime": "11:00",
+      "endTime": "11:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程",
+      "generated": true
+    },
+    {
+      "id": "recurring-1778634459491-2026-10-02",
+      "title": "要KVD",
+      "date": "2026-10-02",
+      "startTime": "10:00",
+      "endTime": "11:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程",
+      "generated": true
+    },
+    {
+      "id": "process-1778569277085-step-1-2026-10-02",
+      "title": "銀行匯款",
+      "date": "2026-10-02",
+      "startTime": "14:00",
+      "endTime": "15:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "華邦認證津貼 · 銀行匯款",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-1778569277085-main-2026-10-05",
+      "title": "華邦認證津貼發放",
+      "date": "2026-10-05",
+      "startTime": "00:00",
+      "endTime": "00:01",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "華邦認證津貼 · 華邦認證津貼發放",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-401-step-1778827334269-2026-10-08",
+      "title": "獎金請款",
+      "date": "2026-10-08",
+      "startTime": "09:00",
+      "endTime": "09:30",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "獎金請款",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-1778634409321-step-1778634307579-2026-10-09",
+      "title": "要Downtime",
+      "date": "2026-10-09",
+      "startTime": "09:15",
+      "endTime": "09:30",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "要ABC team達標資料 · 要Downtime",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-1778634409321-step-1-2026-10-13",
+      "title": "ABC team達標資料(LM)",
+      "date": "2026-10-13",
+      "startTime": "09:00",
+      "endTime": "09:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "要ABC team達標資料 · ABC team達標資料(LM)",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "recurring-1778723189386-2026-10-15",
+      "title": "確認代理獎金是否全匯入",
+      "date": "2026-10-15",
+      "startTime": "11:00",
+      "endTime": "11:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程",
+      "generated": true
+    },
+    {
+      "id": "process-401-request-2026-10-16",
+      "title": "獎金匯入ORCL",
+      "date": "2026-10-16",
+      "startTime": "09:00",
+      "endTime": "16:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "獎金發放流程 · 獎金匯入ORCL",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-1778634409321-main-2026-10-16",
+      "title": "要ABC team達標資料(Leen)",
+      "date": "2026-10-16",
+      "startTime": "10:00",
+      "endTime": "11:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "要ABC team達標資料 · 要ABC team達標資料(Leen)",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "recurring-1779180239432-2026-10-19",
+      "title": "特別加給匯入ORCL",
+      "date": "2026-10-19",
+      "startTime": "11:00",
+      "endTime": "11:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程",
+      "generated": true
+    },
+    {
+      "id": "process-401-bank-2026-10-19",
+      "title": "銀行匯款",
+      "date": "2026-10-19",
+      "startTime": "14:00",
+      "endTime": "15:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "銀行匯款",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-401-main-2026-10-20",
+      "title": "發獎金",
+      "date": "2026-10-20",
+      "startTime": "00:00",
+      "endTime": "00:01",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "每月獎金發放",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-1778569277085-step-1778569243104-2026-10-26",
+      "title": "華邦認證津貼請款",
+      "date": "2026-10-26",
+      "startTime": "09:00",
+      "endTime": "10:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "華邦認證津貼 · 華邦認證津貼請款",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "recurring-1778724845911-2026-10-29",
+      "title": "ORCL跑補充保費",
+      "date": "2026-10-29",
+      "startTime": "11:00",
+      "endTime": "11:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程",
+      "generated": true
+    },
+    {
+      "id": "recurring-1778634459491-2026-11-02",
+      "title": "要KVD",
+      "date": "2026-11-02",
+      "startTime": "10:00",
+      "endTime": "11:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程",
+      "generated": true
+    },
+    {
+      "id": "recurring-1778724912003-2026-11-02",
+      "title": "eFlow跑代理獎金",
+      "date": "2026-11-02",
+      "startTime": "11:00",
+      "endTime": "11:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程",
+      "generated": true
+    },
+    {
+      "id": "process-1778569277085-step-1-2026-11-04",
+      "title": "銀行匯款",
+      "date": "2026-11-04",
+      "startTime": "14:00",
+      "endTime": "15:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "華邦認證津貼 · 銀行匯款",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-1778569277085-main-2026-11-05",
+      "title": "華邦認證津貼發放",
+      "date": "2026-11-05",
+      "startTime": "00:00",
+      "endTime": "00:01",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "華邦認證津貼 · 華邦認證津貼發放",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-401-step-1778827334269-2026-11-10",
+      "title": "獎金請款",
+      "date": "2026-11-10",
+      "startTime": "09:00",
+      "endTime": "09:30",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "獎金請款",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-1778634409321-step-1778634307579-2026-11-11",
+      "title": "要Downtime",
+      "date": "2026-11-11",
+      "startTime": "09:15",
+      "endTime": "09:30",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "要ABC team達標資料 · 要Downtime",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-1778634409321-step-1-2026-11-13",
+      "title": "ABC team達標資料(LM)",
+      "date": "2026-11-13",
+      "startTime": "09:00",
+      "endTime": "09:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "要ABC team達標資料 · ABC team達標資料(LM)",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "recurring-1778723189386-2026-11-13",
+      "title": "確認代理獎金是否全匯入",
+      "date": "2026-11-13",
+      "startTime": "11:00",
+      "endTime": "11:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程",
+      "generated": true
+    },
+    {
+      "id": "process-401-request-2026-11-18",
+      "title": "獎金匯入ORCL",
+      "date": "2026-11-18",
+      "startTime": "09:00",
+      "endTime": "16:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "獎金發放流程 · 獎金匯入ORCL",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-1778634409321-main-2026-11-18",
+      "title": "要ABC team達標資料(Leen)",
+      "date": "2026-11-18",
+      "startTime": "10:00",
+      "endTime": "11:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "要ABC team達標資料 · 要ABC team達標資料(Leen)",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "recurring-1779180239432-2026-11-19",
+      "title": "特別加給匯入ORCL",
+      "date": "2026-11-19",
+      "startTime": "11:00",
+      "endTime": "11:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程",
+      "generated": true
+    },
+    {
+      "id": "process-401-bank-2026-11-19",
+      "title": "銀行匯款",
+      "date": "2026-11-19",
+      "startTime": "14:00",
+      "endTime": "15:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "銀行匯款",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-401-main-2026-11-20",
+      "title": "發獎金",
+      "date": "2026-11-20",
+      "startTime": "00:00",
+      "endTime": "00:01",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "每月獎金發放",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-1778569277085-step-1778569243104-2026-11-24",
+      "title": "華邦認證津貼請款",
+      "date": "2026-11-24",
+      "startTime": "09:00",
+      "endTime": "10:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "華邦認證津貼 · 華邦認證津貼請款",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "recurring-1778724845911-2026-11-27",
+      "title": "ORCL跑補充保費",
+      "date": "2026-11-27",
+      "startTime": "11:00",
+      "endTime": "11:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程",
+      "generated": true
+    },
+    {
+      "id": "recurring-1778724912003-2026-11-30",
+      "title": "eFlow跑代理獎金",
+      "date": "2026-11-30",
+      "startTime": "11:00",
+      "endTime": "11:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程",
+      "generated": true
+    },
+    {
+      "id": "recurring-1778634459491-2026-12-02",
+      "title": "要KVD",
+      "date": "2026-12-02",
+      "startTime": "10:00",
+      "endTime": "11:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程",
+      "generated": true
+    },
+    {
+      "id": "process-1778569277085-step-1-2026-12-03",
+      "title": "銀行匯款",
+      "date": "2026-12-03",
+      "startTime": "14:00",
+      "endTime": "15:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "華邦認證津貼 · 銀行匯款",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-1778569277085-main-2026-12-04",
+      "title": "華邦認證津貼發放",
+      "date": "2026-12-04",
+      "startTime": "00:00",
+      "endTime": "00:01",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "華邦認證津貼 · 華邦認證津貼發放",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-401-step-1778827334269-2026-12-08",
+      "title": "獎金請款",
+      "date": "2026-12-08",
+      "startTime": "09:00",
+      "endTime": "09:30",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "獎金請款",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-1778634409321-step-1778634307579-2026-12-11",
+      "title": "要Downtime",
+      "date": "2026-12-11",
+      "startTime": "09:15",
+      "endTime": "09:30",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "要ABC team達標資料 · 要Downtime",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-1778634409321-step-1-2026-12-15",
+      "title": "ABC team達標資料(LM)",
+      "date": "2026-12-15",
+      "startTime": "09:00",
+      "endTime": "09:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "要ABC team達標資料 · ABC team達標資料(LM)",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "recurring-1778723189386-2026-12-15",
+      "title": "確認代理獎金是否全匯入",
+      "date": "2026-12-15",
+      "startTime": "11:00",
+      "endTime": "11:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程",
+      "generated": true
+    },
+    {
+      "id": "process-401-request-2026-12-16",
+      "title": "獎金匯入ORCL",
+      "date": "2026-12-16",
+      "startTime": "09:00",
+      "endTime": "16:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "獎金發放流程 · 獎金匯入ORCL",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-401-bank-2026-12-17",
+      "title": "銀行匯款",
+      "date": "2026-12-17",
+      "startTime": "14:00",
+      "endTime": "15:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "location": "",
+      "summary": "",
+      "notes": "銀行匯款",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-401-main-2026-12-18",
+      "title": "發獎金",
+      "date": "2026-12-18",
+      "startTime": "00:00",
+      "endTime": "00:01",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "每月獎金發放",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "process-1778634409321-main-2026-12-18",
+      "title": "要ABC team達標資料(Leen)",
+      "date": "2026-12-18",
+      "startTime": "10:00",
+      "endTime": "11:00",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "要ABC team達標資料 · 要ABC team達標資料(Leen)",
+      "origin": "固定流程",
+      "generated": true
+    },
+    {
+      "id": "recurring-1779180239432-2026-12-18",
+      "title": "特別加給匯入ORCL",
+      "date": "2026-12-18",
+      "startTime": "11:00",
+      "endTime": "11:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程",
+      "generated": true
+    },
+    {
+      "id": "recurring-1778724845911-2026-12-29",
+      "title": "ORCL跑補充保費",
+      "date": "2026-12-29",
+      "startTime": "11:00",
+      "endTime": "11:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程",
+      "generated": true
+    },
+    {
+      "id": "recurring-1778724912003-2026-12-31",
+      "title": "eFlow跑代理獎金",
+      "date": "2026-12-31",
+      "startTime": "11:00",
+      "endTime": "11:15",
+      "allDay": false,
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "location": "",
+      "summary": "",
+      "notes": "",
+      "origin": "固定行程",
+      "generated": true
+    }
+  ],
+  "todos": [
+    {
+      "id": 1779673259903,
+      "title": "5/29請假",
+      "dueDate": "",
+      "createdDate": "2026-05-25",
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "summary": "",
+      "notes": "",
+      "reminder": "不提醒",
+      "completed": false
+    }
+  ],
+  "completedTodos": [
+    {
+      "id": 1779435478805,
+      "title": "跟Amy要Downtime",
+      "dueDate": "",
+      "createdDate": "2026-05-22",
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "高",
+      "summary": "",
+      "notes": "",
+      "completed": true,
+      "completedAt": "2026-05-25T17:09:01",
+      "completedDate": "2026-05-25"
+    },
+    {
+      "id": 1778835686957,
+      "title": "拿資料給小T",
+      "dueDate": "2026-05-18",
+      "createdDate": "2026-05-15",
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "summary": "",
+      "notes": "",
+      "completed": true,
+      "completedAt": "2026-05-18T16:16:05",
+      "completedDate": "2026-05-18"
+    },
+    {
+      "id": 1778568279983,
+      "title": "設備獎勵金送簽",
+      "dueDate": "2026-05-15",
+      "createdDate": "2026-05-13",
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "summary": "",
+      "notes": "",
+      "completed": true,
+      "completedAt": "2026-05-15T13:32:06",
+      "completedDate": "2026-05-15"
+    },
+    {
+      "id": 1778660617727,
+      "title": "問馥佑報名沒",
+      "dueDate": "",
+      "createdDate": "2026-05-13",
+      "category": "工作",
+      "categoryColor": "#f97316",
+      "priority": "中",
+      "summary": "",
+      "notes": "",
+      "completed": true,
+      "completedAt": "2026-05-14T09:46:49",
+      "completedDate": "2026-05-14"
+    },
+    {
+      "id": 1778645712630,
+      "title": "整理工作內容",
+      "dueDate": "",
+      "createdDate": "2026-05-13",
+      "category": "個人",
+      "categoryColor": "#3b82f6",
+      "priority": "中",
+      "summary": "",
+      "notes": "",
+      "completed": true,
+      "completedAt": "2026-05-13T15:56:40",
+      "completedDate": "2026-05-13"
+    }
+  ]
+}") return null;
+        return JSON.parse(rawText);
+      }
+
+      async function loadSnapshotFromUrl() {
+        const response = await fetch(SNAPSHOT_FILE, { cache: "no-store" });
+        if (!response.ok) throw new Error("找不到 snapshot");
+        return await response.json();
+      }
+
+      async function loadSnapshotFromFile(file) {
+        const text = await file.text();
+        return JSON.parse(text);
+      }
+
+      function applySnapshot(data, sourceLabel) {
+        snapshot = data;
+        weekAnchor = data?.currentDate || todayIso();
+        monthAnchor = weekAnchor.slice(0, 7);
+        document.getElementById("snapshotStatus").textContent = `已載入：${sourceLabel}`;
+        const exportTime = data?.exportedAt ? new Date(data.exportedAt).toLocaleString("zh-TW") : "-";
+        document.getElementById("snapshotMeta").textContent = `匯出時間：${exportTime} ｜ 版本：${data?.appVersion || "-"}`;
+        renderActiveTab();
+      }
+
+      document.querySelectorAll("[data-tab]").forEach((button) => {
+        button.addEventListener("click", () => {
+          activeTab = button.getAttribute("data-tab");
+          renderActiveTab();
+        });
+      });
+
+      document.getElementById("reloadSnapshotButton").addEventListener("click", async () => {
+        try {
+          const data = await loadSnapshotFromUrl();
+          applySnapshot(data, SNAPSHOT_FILE);
+        } catch (_error) {
+          document.getElementById("snapshotStatus").textContent = "重新讀取失敗，若使用本機檔案請改用「開啟 snapshot」。";
+        }
+      });
+
+      document.getElementById("loadSnapshotButton").addEventListener("click", () => {
+        document.getElementById("snapshotFileInput").click();
+      });
+
+      document.getElementById("snapshotFileInput").addEventListener("change", async (event) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+        try {
+          const data = await loadSnapshotFromFile(file);
+          applySnapshot(data, file.name);
+        } catch (_error) {
+          document.getElementById("snapshotStatus").textContent = "讀取 snapshot 失敗，請確認 JSON 檔案格式正確。";
+          document.getElementById("snapshotMeta").textContent = "";
+        }
+      });
+
+      document.getElementById("prevWeekReadonly").addEventListener("click", () => {
+        weekAnchor = addDays(getWeekStart(weekAnchor), -7);
+        renderWeek();
+      });
+      document.getElementById("nextWeekReadonly").addEventListener("click", () => {
+        weekAnchor = addDays(getWeekStart(weekAnchor), 7);
+        renderWeek();
+      });
+      document.getElementById("todayWeekReadonly").addEventListener("click", () => {
+        weekAnchor = todayIso();
+        renderWeek();
+      });
+
+      document.getElementById("prevMonthReadonly").addEventListener("click", () => {
+        const [year, month] = monthAnchor.split("-").map(Number);
+        const date = new Date(year, month - 1, 1);
+        date.setMonth(date.getMonth() - 1);
+        monthAnchor = `${date.getFullYear()}-${pad(date.getMonth() + 1)}`;
+        renderMonth();
+      });
+      document.getElementById("nextMonthReadonly").addEventListener("click", () => {
+        const [year, month] = monthAnchor.split("-").map(Number);
+        const date = new Date(year, month - 1, 1);
+        date.setMonth(date.getMonth() + 1);
+        monthAnchor = `${date.getFullYear()}-${pad(date.getMonth() + 1)}`;
+        renderMonth();
+      });
+      document.getElementById("todayMonthReadonly").addEventListener("click", () => {
+        monthAnchor = todayIso().slice(0, 7);
+        renderMonth();
+      });
+
+      document.querySelectorAll("[data-filter]").forEach((button) => {
+        button.addEventListener("click", () => {
+          searchFilter = button.getAttribute("data-filter");
+          document.querySelectorAll("[data-filter]").forEach((chip) => chip.classList.toggle("active", chip === button));
+          renderSearch();
+        });
+      });
+
+      document.getElementById("searchKeyword").addEventListener("input", renderSearch);
+      document.getElementById("searchStartDate").addEventListener("input", renderSearch);
+      document.getElementById("searchEndDate").addEventListener("input", renderSearch);
+
+      (async () => {
+        try {
+          const embedded = loadEmbeddedSnapshot();
+          if (embedded) {
+            applySnapshot(embedded, "內嵌手機檢視資料");
+            return;
+          }
+          const data = await loadSnapshotFromUrl();
+          applySnapshot(data, SNAPSHOT_FILE);
+        } catch (_error) {
+          document.getElementById("snapshotStatus").textContent =
+            "找不到同目錄 snapshot，請按右上「開啟 snapshot」手動選擇匯出的 JSON 檔。";
+          document.getElementById("snapshotMeta").textContent = "";
+        }
+      })();
+    </script>
+  </body>
+</html>
